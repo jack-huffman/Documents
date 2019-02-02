@@ -15,28 +15,63 @@ class DocumentCreatorViewController: UIViewController {
     // Body of document
     @IBOutlet weak var body: UITextView!
     
+    // Doc passed from previous view
+    var currentDoc: Document?
+    
+    //Docs location
+    let documentsLocation = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+    
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        // Do any additional setup after loading the view.
+        self.navigationItem.rightBarButtonItem = UIBarButtonItem(title: "Save", style: .plain, target: self, action: #selector(saveDocument))
+        
+        name.addTarget(self, action: #selector(self.textFieldDidChange), for: UIControl.Event.editingChanged)
+        
+        if let currentDoc = currentDoc {
+            name.text = currentDoc.title
+            body.text = currentDoc.body
+        } else {
+            name.text = ""
+            body.text = ""
+        }
     }
     
-    @IBAction func saveDocument(_ sender: UIBarButtonItem) {
-        if name.text == nil {
-            let alert = UIAlertController(title: "Name missing from note!", message: "Please give your note a name before saving.", preferredStyle: .alert)
-            
-            alert.addAction(UIAlertAction(title: "Ok", style: .default, handler: nil))
-            
-            self.present(alert, animated: true)
+    @objc
+    func saveDocument() {
+        if name.text == "" {
+            print("Name field must be populated")
+            return
         }
-        else {
-            // save document
-            let filemgr = FileManager.default
-            let dirPaths = filemgr.urls(for: .documentDirectory, in: .userDomainMask)
-            let docsDir = dirPaths[0].path
+        
+        if body.text == "" {
+            print("Body of document must be populated")
+            return
+        }
+        if let name = name.text, let body = body.text {
+            // size is arbitrary for testing
+            let document = Document(title: name, body: body, dateModified: Date(), size: 60)
+
+            let writeLocation = documentsLocation.appendingPathComponent("\(document.title).json")
+            do {
+                let encoder = JSONEncoder()
+                encoder.outputFormatting = .prettyPrinted
+                let JSON = try encoder.encode(document)
+                try JSON.write(to: writeLocation)
+            } catch let err {
+                print("Error Saving \(document.title)", err)
+            }
             
+            print("Saved Successfully")
+            self.navigationController?.popViewController(animated: true)
         }
     }
+    
+    @objc
+    func textFieldDidChange() {
+        self.navigationItem.title = name.text
+    }
+}
     
     /*
     // MARK: - Navigation
@@ -48,4 +83,4 @@ class DocumentCreatorViewController: UIViewController {
     }
     */
 
-}
+
